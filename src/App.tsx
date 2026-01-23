@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import emailjs from '@emailjs/browser'
 
 interface Flower {
   id: number
@@ -15,11 +16,44 @@ interface Petal {
   duration: number
 }
 
+interface Firework {
+  id: number
+  x: number
+  y: number
+  particles: FireworkParticle[]
+}
+
+interface FireworkParticle {
+  id: number
+  angle: number
+  distance: number
+  color: string
+}
+
 function App() {
   const [flowers, setFlowers] = useState<Flower[]>([])
   const [petals, setPetals] = useState<Petal[]>([])
+  const [fireworks, setFireworks] = useState<Firework[]>([])
+  const [emailSent, setEmailSent] = useState<boolean>(false)
 
   useEffect(() => {
+    // Initialize EmailJS
+    // To set up EmailJS:
+    // 1. Sign up at https://www.emailjs.com/
+    // 2. Create an email service (Gmail, Outlook, etc.)
+    // 3. Create an email template
+    // 4. Get your Public Key from Account → General
+    // 5. Replace 'YOUR_PUBLIC_KEY' below with your actual public key
+    // See EMAILJS_SETUP.md for detailed instructions
+    emailjs.init({
+      publicKey: 'F-tOMdPwla5f-nzDy', // Replace with your EmailJS public key
+    })
+
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+
     // Create flowers scattered throughout
     const newFlowers: Flower[] = []
     for (let i = 0; i < 30; i++) {
@@ -45,6 +79,116 @@ function App() {
     }
     setPetals(newPetals)
   }, [])
+
+  const triggerFireworks = async () => {
+    // Send notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('💜 Valentine\'s Day! 💜', {
+        body: 'You are the most amazing girl in the worls, thank you for saying yes. I truly do not deserve you',
+        icon: '💜',
+        badge: '💜',
+        tag: 'valentine',
+      })
+    } else if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          new Notification('💜 Valentine\'s Day! 💜', {
+            body: 'You are the most amazing girl in the world, thank you for saying yes. I truly do not deserve you',
+            icon: '💜',
+            badge: '💜',
+            tag: 'valentine',
+          })
+        }
+      })
+    }
+
+    // Send email to recipient
+    const recipientEmail = 'carlbucknor2021@gmail.com'
+    try {
+      // EmailJS configuration
+      // Replace these with your actual EmailJS credentials from your dashboard:
+      // - Service ID: Found in Email Services section
+      // - Template ID: Found in Email Templates section
+      // See EMAILJS_SETUP.md for detailed setup instructions
+      const serviceId = 'service_l8l96bs' // Replace with your EmailJS service ID
+      const templateId = 'template_v8qnytl' // Replace with your EmailJS template ID
+      
+      // Validate email format before sending
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      const cleanEmail = recipientEmail.trim()
+      if (!emailRegex.test(cleanEmail)) {
+        throw new Error('Invalid email address format')
+      }
+
+      // EmailJS template parameters
+      // IMPORTANT: Make sure your EmailJS template uses {{to_email}} in the "To" field
+      // Also ensure your EmailJS service allows dynamic recipients in the service settings
+      // Common parameter names: to_email, to_name, message, subject, user_email, etc.
+      const templateParams = {
+        to_email: cleanEmail,
+        user_email: cleanEmail, // Some templates use this instead
+        to_name: 'Valentine',
+        message: 'She said yes!!!!!! Yaaaaayyyyy 💕',
+        subject: '💜 Valentine\'s Day! 💜',
+        reply_to: cleanEmail,
+      }
+
+      await emailjs.send(serviceId, templateId, templateParams)
+      setEmailSent(true)
+      setTimeout(() => setEmailSent(false), 5000)
+    } catch (error) {
+      console.error('Failed to send email:', error)
+      // Fallback: Open mailto link if EmailJS fails
+      const subject = encodeURIComponent('💜 Valentine\'s Day! 💜')
+      const body = encodeURIComponent('She said yes!!!!!! Yaaaaayyyyy 💕')
+      window.location.href = `mailto:${recipientEmail}?subject=${subject}&body=${body}`
+    }
+
+    // Create multiple fireworks
+    const colors = [
+      '#ec4899', '#db2777', '#be185d', // Pink/Red
+      '#a855f7', '#9333ea', '#7e22ce', // Purple
+      '#f59e0b', '#f97316', '#ea580c', // Orange
+      '#10b981', '#059669', '#047857', // Green
+      '#3b82f6', '#2563eb', '#1d4ed8', // Blue
+    ]
+
+    const newFireworks: Firework[] = []
+    const fireworkCount = 8
+
+    for (let i = 0; i < fireworkCount; i++) {
+      const particles: FireworkParticle[] = []
+      const particleCount = 30
+      const fireworkColors = [
+        colors[Math.floor(Math.random() * colors.length)],
+        colors[Math.floor(Math.random() * colors.length)],
+        colors[Math.floor(Math.random() * colors.length)],
+      ]
+
+      for (let j = 0; j < particleCount; j++) {
+        particles.push({
+          id: j,
+          angle: (j * 360) / particleCount,
+          distance: 80 + Math.random() * 40,
+          color: fireworkColors[Math.floor(Math.random() * fireworkColors.length)],
+        })
+      }
+
+      newFireworks.push({
+        id: Date.now() + i,
+        x: 20 + Math.random() * 60, // Random position across screen
+        y: 20 + Math.random() * 60,
+        particles,
+      })
+    }
+
+    setFireworks(newFireworks)
+
+    // Remove fireworks after animation completes
+    setTimeout(() => {
+      setFireworks([])
+    }, 3000)
+  }
 
   const RealisticFlower = ({ flower }: { flower: Flower }) => {
     const petalCount = 8
@@ -204,21 +348,224 @@ function App() {
             }}
           >
             {/* Hair */}
-            <div 
-              className="absolute"
-              style={{
-                top: isMale ? '-5px' : '-8px',
-                left: isMale ? '8px' : '-8px',
-                width: isMale ? '54px' : '86px',
-                height: isMale ? '45px' : '60px',
-                background: isMale 
-                  ? 'linear-gradient(135deg, #78350f 0%, #92400e 100%)'
-                  : 'linear-gradient(135deg, #451a03 0%, #78350f 100%)',
-                borderRadius: isMale ? '50% 50% 35% 35%' : '50% 50% 40% 40%',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                zIndex: -1,
-              }}
-            />
+            {isMale ? (
+              <div 
+                className="absolute"
+                style={{
+                  top: '-5px',
+                  left: '8px',
+                  width: '54px',
+                  height: '45px',
+                  background: 'linear-gradient(135deg, #78350f 0%, #92400e 100%)',
+                  borderRadius: '50% 50% 35% 35%',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                  zIndex: -1,
+                }}
+              />
+            ) : (
+              <>
+                {/* Top hair part/base with center part */}
+                <div 
+                  className="absolute hair-base"
+                  style={{
+                    top: '-8px',
+                    left: '0px',
+                    width: '70px',
+                    height: '38px',
+                    background: 'linear-gradient(135deg, #451a03 0%, #5a2a0a 30%, #78350f 60%, #92400e 100%)',
+                    borderRadius: '50% 50% 30% 30%',
+                    boxShadow: '0 3px 8px rgba(0,0,0,0.25), inset 0 -2px 4px rgba(0,0,0,0.15), inset 2px 0 6px rgba(120, 53, 15, 0.3)',
+                    zIndex: -1,
+                  }}
+                />
+                {/* Hair part line */}
+                <div 
+                  className="absolute"
+                  style={{
+                    top: '-5px',
+                    left: '50%',
+                    width: '2px',
+                    height: '25px',
+                    background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
+                    transform: 'translateX(-50%)',
+                    zIndex: 0,
+                  }}
+                />
+                {/* Hair highlights */}
+                <div 
+                  className="absolute"
+                  style={{
+                    top: '-6px',
+                    left: '8px',
+                    width: '25px',
+                    height: '20px',
+                    background: 'radial-gradient(ellipse at 30% 30%, rgba(146, 64, 14, 0.6) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    zIndex: 0,
+                  }}
+                />
+                <div 
+                  className="absolute"
+                  style={{
+                    top: '-6px',
+                    right: '8px',
+                    width: '25px',
+                    height: '20px',
+                    background: 'radial-gradient(ellipse at 70% 30%, rgba(146, 64, 14, 0.6) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    zIndex: 0,
+                  }}
+                />
+                
+                {/* Left pigtail - main strand */}
+                <div 
+                  className="absolute hair-pigtail hair-pigtail-left"
+                  style={{
+                    top: '10px',
+                    left: '-20px',
+                    width: '24px',
+                    height: '58px',
+                    background: 'linear-gradient(135deg, #451a03 0%, #5a2a0a 20%, #78350f 50%, #92400e 80%, #78350f 100%)',
+                    borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                    transform: 'rotate(-25deg)',
+                    zIndex: -2,
+                    boxShadow: '0 3px 8px rgba(0,0,0,0.3), inset -2px 0 4px rgba(0,0,0,0.2), inset 2px 0 4px rgba(146, 64, 14, 0.3)',
+                  }}
+                />
+                {/* Left pigtail - inner layer for depth */}
+                <div 
+                  className="absolute hair-pigtail-left-inner"
+                  style={{
+                    top: '12px',
+                    left: '-18px',
+                    width: '18px',
+                    height: '54px',
+                    background: 'linear-gradient(135deg, #451a03 0%, #78350f 60%, #92400e 100%)',
+                    borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                    transform: 'rotate(-23deg)',
+                    zIndex: -3,
+                    boxShadow: 'inset 1px 0 3px rgba(146, 64, 14, 0.4)',
+                  }}
+                />
+                {/* Left pigtail - outer highlight */}
+                <div 
+                  className="absolute"
+                  style={{
+                    top: '15px',
+                    left: '-19px',
+                    width: '8px',
+                    height: '45px',
+                    background: 'linear-gradient(135deg, rgba(146, 64, 14, 0.5) 0%, transparent 100%)',
+                    borderRadius: '50%',
+                    transform: 'rotate(-25deg)',
+                    zIndex: -1,
+                  }}
+                />
+                {/* Left pigtail curl - main */}
+                <div 
+                  className="absolute pigtail-curl-left"
+                  style={{
+                    top: '60px',
+                    left: '-26px',
+                    width: '22px',
+                    height: '24px',
+                    background: 'radial-gradient(ellipse at 40% 40%, #92400e 0%, #78350f 50%, #5a2a0a 100%)',
+                    borderRadius: '50%',
+                    transform: 'rotate(-15deg)',
+                    zIndex: -2,
+                    boxShadow: '0 3px 6px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(0,0,0,0.2), inset 2px 2px 4px rgba(146, 64, 14, 0.3)',
+                  }}
+                />
+                {/* Left pigtail curl - highlight */}
+                <div 
+                  className="absolute"
+                  style={{
+                    top: '62px',
+                    left: '-24px',
+                    width: '8px',
+                    height: '10px',
+                    background: 'radial-gradient(ellipse at 30% 30%, rgba(146, 64, 14, 0.6) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    transform: 'rotate(-15deg)',
+                    zIndex: -1,
+                  }}
+                />
+                
+                {/* Right pigtail - main strand */}
+                <div 
+                  className="absolute hair-pigtail hair-pigtail-right"
+                  style={{
+                    top: '10px',
+                    right: '-20px',
+                    width: '24px',
+                    height: '58px',
+                    background: 'linear-gradient(225deg, #451a03 0%, #5a2a0a 20%, #78350f 50%, #92400e 80%, #78350f 100%)',
+                    borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                    transform: 'rotate(25deg)',
+                    zIndex: -2,
+                    boxShadow: '0 3px 8px rgba(0,0,0,0.3), inset 2px 0 4px rgba(0,0,0,0.2), inset -2px 0 4px rgba(146, 64, 14, 0.3)',
+                  }}
+                />
+                {/* Right pigtail - inner layer for depth */}
+                <div 
+                  className="absolute hair-pigtail-right-inner"
+                  style={{
+                    top: '12px',
+                    right: '-18px',
+                    width: '18px',
+                    height: '54px',
+                    background: 'linear-gradient(225deg, #451a03 0%, #78350f 60%, #92400e 100%)',
+                    borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                    transform: 'rotate(23deg)',
+                    zIndex: -3,
+                    boxShadow: 'inset -1px 0 3px rgba(146, 64, 14, 0.4)',
+                  }}
+                />
+                {/* Right pigtail - outer highlight */}
+                <div 
+                  className="absolute"
+                  style={{
+                    top: '15px',
+                    right: '-19px',
+                    width: '8px',
+                    height: '45px',
+                    background: 'linear-gradient(225deg, rgba(146, 64, 14, 0.5) 0%, transparent 100%)',
+                    borderRadius: '50%',
+                    transform: 'rotate(25deg)',
+                    zIndex: -1,
+                  }}
+                />
+                {/* Right pigtail curl - main */}
+                <div 
+                  className="absolute pigtail-curl-right"
+                  style={{
+                    top: '60px',
+                    right: '-26px',
+                    width: '22px',
+                    height: '24px',
+                    background: 'radial-gradient(ellipse at 60% 40%, #92400e 0%, #78350f 50%, #5a2a0a 100%)',
+                    borderRadius: '50%',
+                    transform: 'rotate(15deg)',
+                    zIndex: -2,
+                    boxShadow: '0 3px 6px rgba(0,0,0,0.25), inset 2px -2px 4px rgba(0,0,0,0.2), inset -2px 2px 4px rgba(146, 64, 14, 0.3)',
+                  }}
+                />
+                {/* Right pigtail curl - highlight */}
+                <div 
+                  className="absolute"
+                  style={{
+                    top: '62px',
+                    right: '-24px',
+                    width: '8px',
+                    height: '10px',
+                    background: 'radial-gradient(ellipse at 70% 30%, rgba(146, 64, 14, 0.6) 0%, transparent 70%)',
+                    borderRadius: '50%',
+                    transform: 'rotate(15deg)',
+                    zIndex: -1,
+                  }}
+                />
+              </>
+            )}
             
             {/* Eyes */}
             <div className="absolute w-2.5 h-2.5 bg-gray-800 rounded-full" style={{ left: '18px', top: '26px' }} />
@@ -457,6 +804,43 @@ function App() {
         }}
       />
 
+      {/* Fireworks */}
+      {fireworks.map((firework) => (
+        <div
+          key={firework.id}
+          className="fixed pointer-events-none"
+          style={{
+            left: `${firework.x}%`,
+            top: `${firework.y}%`,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 100,
+          }}
+        >
+          {firework.particles.map((particle) => {
+            const radian = (particle.angle * Math.PI) / 180
+            const x = Math.cos(radian) * particle.distance
+            const y = Math.sin(radian) * particle.distance
+            
+            return (
+              <div
+                key={particle.id}
+                className="absolute rounded-full firework-particle"
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  background: particle.color,
+                  boxShadow: `0 0 8px ${particle.color}, 0 0 16px ${particle.color}`,
+                  left: '50%',
+                  top: '50%',
+                  '--end-x': `${x}px`,
+                  '--end-y': `${y}px`,
+                } as React.CSSProperties & { '--end-x': string; '--end-y': string }}
+              />
+            )
+          })}
+        </div>
+      ))}
+
       {/* Falling petals */}
       {petals.map((petal) => (
         <div
@@ -529,10 +913,35 @@ function App() {
               <p className="text-purple-800 text-xl italic mb-4">
                 "In a field of lavender, I found my heart"
               </p>
-              <div className="flex justify-center gap-2 text-2xl">
+              <div className="flex justify-center gap-2 text-2xl mb-8">
                 <span className="animate-bounce" style={{ animationDelay: '0s' }}>💜</span>
                 <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>🌸</span>
                 <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>💜</span>
+              </div>
+              
+              {/* Valentine Button */}
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={triggerFireworks}
+                  className="px-8 py-4 text-xl font-semibold text-white rounded-full shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95"
+                  style={{
+                    background: 'linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%)',
+                    boxShadow: '0 8px 24px rgba(236, 72, 153, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 12px 32px rgba(236, 72, 153, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(236, 72, 153, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3)';
+                  }}
+                >
+                  Will you be my Valentine
+                </button>
+                {emailSent && (
+                  <p className="mt-4 text-green-600 text-sm animate-fadeIn">
+                    ✉️ Email sent successfully!
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -627,6 +1036,21 @@ function App() {
           }
         }
 
+        @keyframes fireworkExplode {
+          0% {
+            opacity: 1;
+            transform: translate(-50%, -50%) translate(0, 0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) translate(var(--end-x, 0), var(--end-y, 0)) scale(0);
+          }
+        }
+
+        .firework-particle {
+          animation: fireworkExplode 1s ease-out forwards;
+        }
+
         @keyframes sparkle {
           0%, 100% {
             opacity: 0;
@@ -636,6 +1060,105 @@ function App() {
             opacity: 1;
             transform: scale(1.5) rotate(180deg);
           }
+        }
+
+        @keyframes pigtailSwingLeft {
+          0%, 100% {
+            transform: rotate(-25deg) translateX(0px);
+          }
+          25% {
+            transform: rotate(-30deg) translateX(-3px);
+          }
+          50% {
+            transform: rotate(-20deg) translateX(2px);
+          }
+          75% {
+            transform: rotate(-28deg) translateX(-1px);
+          }
+        }
+
+        @keyframes pigtailSwingRight {
+          0%, 100% {
+            transform: rotate(25deg) translateX(0px);
+          }
+          25% {
+            transform: rotate(30deg) translateX(3px);
+          }
+          50% {
+            transform: rotate(20deg) translateX(-2px);
+          }
+          75% {
+            transform: rotate(28deg) translateX(1px);
+          }
+        }
+
+        @keyframes pigtailCurlLeft {
+          0%, 100% {
+            transform: rotate(-15deg) translateX(0px) translateY(0px);
+          }
+          50% {
+            transform: rotate(-18deg) translateX(-2px) translateY(2px);
+          }
+        }
+
+        @keyframes pigtailCurlRight {
+          0%, 100% {
+            transform: rotate(15deg) translateX(0px) translateY(0px);
+          }
+          50% {
+            transform: rotate(18deg) translateX(2px) translateY(2px);
+          }
+        }
+
+        @keyframes hairBaseFlow {
+          0%, 100% {
+            transform: translateX(0px) translateY(0px);
+          }
+          25% {
+            transform: translateX(-1px) translateY(0.5px);
+          }
+          50% {
+            transform: translateX(1px) translateY(-0.5px);
+          }
+          75% {
+            transform: translateX(-0.5px) translateY(0.3px);
+          }
+        }
+
+        .hair-base {
+          animation: hairBaseFlow 3s ease-in-out infinite;
+        }
+
+        .hair-pigtail-left {
+          animation: pigtailSwingLeft 2s ease-in-out infinite;
+          transform-origin: top center;
+        }
+
+        .hair-pigtail-left-inner {
+          animation: pigtailSwingLeft 2s ease-in-out infinite;
+          transform-origin: top center;
+        }
+
+        .hair-pigtail-right {
+          animation: pigtailSwingRight 2s ease-in-out infinite;
+          transform-origin: top center;
+          animation-delay: 0.1s;
+        }
+
+        .hair-pigtail-right-inner {
+          animation: pigtailSwingRight 2s ease-in-out infinite;
+          transform-origin: top center;
+          animation-delay: 0.1s;
+        }
+
+        .pigtail-curl-left {
+          animation: pigtailCurlLeft 1.8s ease-in-out infinite;
+          animation-delay: 0.2s;
+        }
+
+        .pigtail-curl-right {
+          animation: pigtailCurlRight 1.8s ease-in-out infinite;
+          animation-delay: 0.3s;
         }
 
         .animate-fadeIn {
