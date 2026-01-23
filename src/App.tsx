@@ -84,7 +84,7 @@ function App() {
     // Send notification
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('💜 Valentine\'s Day! 💜', {
-        body: 'You are the most amazing girl in the worls, thank you for saying yes. I truly do not deserve you',
+        body: 'You are the most amazing girl in the world, thank you for saying yes. I truly do not deserve you',
         icon: '💜',
         badge: '💜',
         tag: 'valentine',
